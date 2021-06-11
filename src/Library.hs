@@ -256,18 +256,20 @@ fuerteDeLosCondenados = Travesia {
     recompensa = (\_ -> 50)
 }
 
+enfrentarseContra :: Barco -> Barco -> Barco
+enfrentarseContra barcoEnemigo barco = enfrentarse barco barcoEnemigo
 
 travesiaDelFlameheart :: Travesia
 travesiaDelFlameheart = Travesia {
     sucesos = [
-        flip enfrentarse (Barco {
+        enfrentarseContra (Barco {
             tripulacion = replicate 4 (Tripulante 30),
             madera = 50,
             balas = 50,
             tipoDeBarco = Galeon,
             oro = 0
         }),
-        flip enfrentarse (Barco {
+        enfrentarseContra (Barco {
             tripulacion = replicate 3 (Tripulante 10),
             madera = 30,
             balas = 30,
