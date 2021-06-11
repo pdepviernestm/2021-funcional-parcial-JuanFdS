@@ -3,6 +3,8 @@ import PdePreludat
 
 data Tripulante = Tripulante { energia :: Number } deriving (Show, Eq)
 
+-- data Tripulante' = ConVida { energia' :: Number } | Muerto
+
 type ActividadDiaria = Tripulante -> Tripulante
 
 estaEnLasUltimas :: Tripulante -> Bool
@@ -19,6 +21,9 @@ enfrentarEsqueleto tripulante
     | estaEnLasUltimas tripulante = disminuirEnergia 20 tripulante
     | otherwise = disminuirEnergia 10 tripulante
 
+-- Tripulante con 50 de energia que pelea contra 2 esqueletos
+-- si multiplicase ahi 10 * cantidad de esqueletos, quedaria en 30
+-- pero, si hago enfrentarEsqueleto (enfrentarEsqueleto (Tripulante 50)), quedaria en 20
 
 transportarCarga :: Number -> ActividadDiaria
 transportarCarga peso tripulante = disminuirEnergia peso tripulante
@@ -29,12 +34,28 @@ beberGrog = beberGrogs 1
 beberGrogs :: Number -> ActividadDiaria
 beberGrogs cantidad tripulante = aumentarEnergia (20 * cantidad) tripulante
 
+-- Alternativa
+-- beberGrog' :: ActividadDiaria
+-- beberGrog' = aumentarEnergia 20
+
+-- aplicarVeces :: Number -> (a -> a) -> a -> a
+-- aplicarVeces cantidad f x = foldr ($) x (replicate cantidad f)
+
+-- beberGrogs' :: Number -> Tripulante -> Tripulante
+-- beberGrogs' cantidad tripulante =
+--     aplicarVeces cantidad beberGrog' tripulante
+
 murio :: Tripulante -> Bool
 murio = (==0) . energia
 
 data Barco = Barco { tripulacion :: [Tripulante], tipoDeBarco :: TipoDeBarco, oro :: Oro, balas :: Number, madera :: Number } deriving (Eq, Show)
 
 data TipoDeBarco = Galeon | Bergatin | Balardo deriving (Show, Eq)
+
+-- data Barco = Barco { tamanio :: Number }
+
+-- bergatin = Barco 100 ...
+-- balardo = Barco 50 ...
 
 esBarcoFantasma :: Barco -> Bool
 esBarcoFantasma = all murio . tripulacion
@@ -51,6 +72,9 @@ tamanioSegunTipoDeBarco Balardo = 50
 conOro :: Oro -> Barco -> Barco
 conOro oro (Barco tripulacion tipoDeBarco _ balas madera) =
     Barco tripulacion tipoDeBarco oro balas madera
+
+-- conOro' :: Oro -> Barco -> Barco
+-- conOro' nuevoOro barco = barco { oro = nuevoOro }
 
 aumentarOro :: Oro -> Barco -> Barco
 aumentarOro masOro (Barco tripulacion tipoDeBarco oro balas madera) =
@@ -78,7 +102,8 @@ cantidadTripulantes = length . tripulacion
 
 llenarAMaximaCapacidad :: Barco -> Barco
 llenarAMaximaCapacidad barco =
-    (conOro (7 * metrosCuadrados barco) . conBalas (3 * cantidadTripulantes barco)) barco
+    (conOro (7 * metrosCuadrados barco) .
+     conBalas (3 * cantidadTripulantes barco)) barco
 
 sumarOro :: Number -> Barco -> Barco
 sumarOro cantidad barco = barco { oro = oro barco + cantidad }
@@ -89,10 +114,13 @@ llevarseRecursosDe barco barcoSaqueado =
     aumentarOro (oro barcoSaqueado) .
     aumentarBalas (balas barcoSaqueado)) barco
 
+pierdeTodosLosRecursos :: Barco -> Barco
+pierdeTodosLosRecursos = conOro 0 . conBalas 0 . conMadera 0
+
 enfrentarse :: Barco -> Barco -> Barco
 enfrentarse barco enemigo
     | gana barco enemigo = llevarseRecursosDe barco enemigo
-    | otherwise = (conOro 0 . conBalas 0 . conMadera 0) barco
+    | otherwise = pierdeTodosLosRecursos barco
 
 gana :: Barco -> Barco -> Bool
 gana unBarco otroBarco
@@ -132,7 +160,8 @@ mapTripulantes afectarTripulante barco =
     conTripulacion (map afectarTripulante (tripulacion barco)) barco
 
 cargarEntreQuienesPueden :: Number -> Barco -> Barco
-cargarEntreQuienesPueden peso barco = mapTripulantes (transportarCarga (peso / cantidadDeTripulantesConVida barco)) barco
+cargarEntreQuienesPueden peso barco =
+    mapTripulantes (transportarCarga (peso / cantidadDeTripulantesConVida barco)) barco
 
 type Suceso = Barco -> Barco
 
@@ -153,8 +182,19 @@ conPrimerTripulanteQue condicion afectarTripulante barco =
          (drop 1 . dropWhile (not.condicion) . tripulacion) barco)
          barco
 
+-- Alternativa
+-- afectarPrimerTripulante' :: (Tripulante -> Bool) -> (Tripulante -> Tripulante) -> [Tripulante] -> [Tripulante]
+-- afectarPrimerTripulante' condicion afectarTripulante [] = []
+-- afectarPrimerTripulante' condicion afectarTripulante (tripulante : tripulantes)
+--     | condicion tripulante = afectarTripulante tripulante : tripulantes
+--     | otherwise = tripulante : afectarPrimerTripulante' condicion afectarTripulante tripulantes
+
+-- conPrimerTripulanteQue' :: (Tripulante -> Bool) -> (Tripulante -> Tripulante) -> Barco -> Barco
+-- conPrimerTripulanteQue' condicion afectarTripulante barco =
+--     conTripulacion (afectarPrimerTripulante' condicion afectarTripulante (tripulacion barco)) barco
+
 enfrentarEsqueletos :: Number -> Suceso
-enfrentarEsqueletos cantidad = conPrimerTripulanteQue (not . murio) (lucharContraEsqueletos cantidad)
+enfrentarEsqueletos cantidad barco = conPrimerTripulanteQue conVida (lucharContraEsqueletos cantidad) barco
 
 precioGrog :: Number
 precioGrog = 30
@@ -166,14 +206,17 @@ pagar cantidad (Barco tripulacion tipoDeBarco oro balas madera) =
 algunTripulanteMurio :: Barco -> Bool
 algunTripulanteMurio = any murio . tripulacion
 
+puedePagarGrog :: Barco -> Bool
+puedePagarGrog barco = oro barco >= precioGrog
+
 pasarPorUnaTiendaDeGrog :: Suceso
 pasarPorUnaTiendaDeGrog barco
-    | oro barco >= precioGrog && algunTripulanteMurio barco =
+    | puedePagarGrog barco && algunTripulanteMurio barco =
         (conPrimerTripulanteQue murio beberGrog . pagar precioGrog) barco
     | otherwise = barco
 
-suceder :: Suceso -> Barco -> Barco
-suceder suceso barco
+suceder :: Barco -> Suceso -> Barco
+suceder barco suceso
     | esBarcoFantasma barco = barco
     | otherwise = suceso barco
 
@@ -184,12 +227,28 @@ type Recompensa = Barco -> Oro
 data Travesia = Travesia { sucesos :: [Suceso], recompensa :: Recompensa }
 
 pasarTodosLosSucesos :: Travesia -> Barco -> Barco
-pasarTodosLosSucesos travesia barco = foldl (flip suceder) barco (sucesos travesia)
+pasarTodosLosSucesos travesia barco = foldl suceder barco (sucesos travesia)
 
 cobrarRecompensa :: Travesia -> Barco -> Barco
 cobrarRecompensa travesia barco
     | esBarcoFantasma barco = barco
     | otherwise = aumentarOro (recompensa travesia barco) barco
+
+realizarTravesia :: Travesia -> Barco -> Barco
+realizarTravesia travesia barco = (cobrarRecompensa travesia . pasarTodosLosSucesos travesia) barco
+
+-- esto estaria mal:
+-- realizarTravesia' :: Travesia -> Barco -> Barco
+-- realizarTravesia' travesia barco
+--   | esBarcoFantasma (pasarTodosLosSucesos travesia barco) = cobrarRecompensa travesia barco
+  -- el barco que cobra la recompensa es el barco ANTES de haber hecho la travesia, porque es inmutable
+--   | otherwise = barco
+-- esto estaria bien:
+-- realizarTravesia' :: Travesia -> Barco -> Barco
+-- realizarTravesia' travesia barco
+--   | esBarcoFantasma (pasarTodosLosSucesos travesia barco) = cobrarRecompensa travesia (pasarTodosLosSucesos travesia barco)
+  -- el barco que cobra la recompensa es el barco ANTES de haber hecho la travesia, porque es inmutable
+--   | otherwise = barco
 
 fuerteDeLosCondenados :: Travesia
 fuerteDeLosCondenados = Travesia {
@@ -197,8 +256,6 @@ fuerteDeLosCondenados = Travesia {
     recompensa = (\_ -> 50)
 }
 
-realizarTravesia :: Travesia -> Barco -> Barco
-realizarTravesia travesia barco = (cobrarRecompensa travesia . pasarTodosLosSucesos travesia) barco
 
 travesiaDelFlameheart :: Travesia
 travesiaDelFlameheart = Travesia {
@@ -220,11 +277,11 @@ travesiaDelFlameheart = Travesia {
         encontrarCargamentoDeGrog,
     embarcarTesoro 150
  ],
- recompensa = cantidadDeTripulantesConVida
+ recompensa = (*200) . cantidadDeTripulantesConVida
 }
 
 laGirita :: Travesia
 laGirita = Travesia {
     sucesos = replicate 4 pasarPorUnaTiendaDeGrog ++ [enfrentarEsqueletos 10],
-    recompensa = oro
+    recompensa = (\barco -> oro barco)
 }

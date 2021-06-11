@@ -134,8 +134,8 @@ correrTests = hspec $ do
            pasarPorUnaTiendaDeGrog (unBarco { oro = 50, tripulacion = [Tripulante 0, Tripulante 10] })
            `shouldBe` unBarco { oro = 20, tripulacion = [Tripulante 20, Tripulante 10] }
      it "un suceso nunca le sucede a un barco fantasma" $ do
-      suceder encontrarCargamentoDeGrog (barcoConTripulacion [Tripulante 0]) `shouldBe` barcoConTripulacion [Tripulante 0]
-      suceder pasarPorUnaTiendaDeGrog ((barcoConTripulacion [Tripulante 0]) { oro = 100 }) `shouldBe` (barcoConTripulacion [Tripulante 0]) { oro = 100 }
+      suceder (barcoConTripulacion [Tripulante 0]) encontrarCargamentoDeGrog `shouldBe` barcoConTripulacion [Tripulante 0]
+      suceder ((barcoConTripulacion [Tripulante 0]) { oro = 100 }) pasarPorUnaTiendaDeGrog `shouldBe` (barcoConTripulacion [Tripulante 0]) { oro = 100 }
      describe "travesia" $ do
        it "el barco que la logra superar sin convertirse en un barco fantasma cobra la recompensa" $ do
          realizarTravesia (Travesia [enfrentarEsqueletos 5] (\_ -> 20))
@@ -153,7 +153,7 @@ correrTests = hspec $ do
          realizarTravesia travesiaDelFlameheart (unBarco { tripulacion = [Tripulante 1], tipoDeBarco = Galeon, madera = 60, balas = 50, oro = 0 })
               `shouldBe` unBarco { tripulacion = [Tripulante 0], tipoDeBarco = Galeon, madera = 140, balas = 130, oro = 150 }
          realizarTravesia travesiaDelFlameheart (unBarco { tripulacion = [Tripulante 200], tipoDeBarco = Galeon, madera = 60, balas = 50, oro = 0 })
-              `shouldBe` unBarco { tripulacion = [Tripulante 150], tipoDeBarco = Galeon, madera = 140, balas = 130, oro = 151 }
+              `shouldBe` unBarco { tripulacion = [Tripulante 150], tipoDeBarco = Galeon, madera = 140, balas = 130, oro = 350 }
      describe "la girita" $ do
        it "consiste en pasar 4 veces por una tienda de grog y pelear contra un ejercito de 10 esqueletos, la recompensa es duplicar el oro del barco" $ do
          realizarTravesia laGirita (unBarco { tripulacion = [Tripulante 200, Tripulante 0, Tripulante 0, Tripulante 0, Tripulante 0], oro = 130 })
