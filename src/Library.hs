@@ -145,14 +145,6 @@ encontrarCargamentoDeGrog = mapTripulantes (beberGrogs 5)
 lucharContraEsqueletos :: Number -> Tripulante -> Tripulante
 lucharContraEsqueletos cantidad tripulante = foldr ($) tripulante (replicate cantidad enfrentarEsqueleto)
 
-conPrimerTripulanteConVida :: (Tripulante -> Tripulante) -> Barco -> Barco
-conPrimerTripulanteConVida afectarTripulante barco =
-    conTripulacion
-        (takeWhile murio (tripulacion barco) ++
-         map afectarTripulante ((take 1 . dropWhile murio . tripulacion) barco) ++
-         (drop 1 . dropWhile murio . tripulacion) barco)
-         barco
-
 conPrimerTripulanteQue :: (Tripulante -> Bool) -> (Tripulante -> Tripulante) -> Barco -> Barco
 conPrimerTripulanteQue condicion afectarTripulante barco =
     conTripulacion
